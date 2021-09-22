@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import Unauthorized
 
-from forms import CSRFOnlyForm, UserAddForm, LoginForm, MessageForm
+from forms import CSRFOnlyForm, EditUserForm, UserAddForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message
 
 import dotenv
@@ -43,6 +43,12 @@ def add_user_to_g():
         g.user = None
 
 
+@app.before_request
+def save_csrf_form_to_g():
+    """Save CSRF form to Flask global."""
+    g.csrf = CSRFOnlyForm()
+
+
 def do_login(user):
     """Log in user."""
 
@@ -69,7 +75,6 @@ def signup():
     """
 
     form = UserAddForm()
-    csrf_form = CSRFOnlyForm()
 
     if form.validate_on_submit():
         try:
@@ -83,14 +88,14 @@ def signup():
 
         except IntegrityError:
             flash("Username already taken", 'danger')
-            return render_template('users/signup.html', form=form, csrf_form=csrf_form)
+            return render_template('users/signup.html', form=form, csrf_form=g.csrf)
 
         do_login(user)
 
         return redirect("/")
 
     else:
-        return render_template('users/signup.html', form=form, csrf_form=csrf_form)
+        return render_template('users/signup.html', form=form, csrf_form=g.csrf)
 
 
 @app.route('/login', methods=["GET", "POST"])
@@ -98,7 +103,6 @@ def login():
     """Handle user login."""
 
     form = LoginForm()
-    csrf_form = CSRFOnlyForm()
 
     if form.validate_on_submit():
         user = User.authenticate(form.username.data,
@@ -111,16 +115,14 @@ def login():
 
         flash("Invalid credentials.", 'danger')
 
-    return render_template('users/login.html', form=form, csrf_form=csrf_form)
+    return render_template('users/login.html', form=form, csrf_form=g.csrf)
 
 
 @app.post('/logout')
 def logout():
     """Handle logout of user."""
 
-    form = CSRFOnlyForm()
-
-    if form.validate_on_submit():
+    if g.csrf.validate_on_submit():
         do_logout()
         flash('Logged out successfully!')
 
@@ -139,14 +141,13 @@ def list_users():
     Can take a 'q' param in querystring to search by that username.
     """
     search = request.args.get('q')
-    csrf_form = CSRFOnlyForm()
 
     if not search:
         users = User.query.all()
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users, csrf_form=csrf_form)
+    return render_template('users/index.html', users=users, csrf_form=g.csrf)
 
 
 @app.get('/users/<int:user_id>')
@@ -154,9 +155,8 @@ def users_show(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)
-    csrf_form = CSRFOnlyForm()
 
-    return render_template('users/show.html', user=user, csrf_form=csrf_form)
+    return render_template('users/show.html', user=user, csrf_form=g.csrf)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -168,8 +168,7 @@ def show_following(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    csrf_form = CSRFOnlyForm()
-    return render_template('users/following.html', user=user, csrf_form=csrf_form)
+    return render_template('users/following.html', user=user, csrf_form=g.csrf)
 
 
 @app.get('/users/<int:user_id>/followers')
@@ -181,8 +180,7 @@ def users_followers(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    csrf_form = CSRFOnlyForm()
-    return render_template('users/followers.html', user=user, csrf_form=csrf_form)
+    return render_template('users/followers.html', user=user, csrf_form=g.csrf)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -218,11 +216,41 @@ def stop_following(follow_id):
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
+    # check if current user is logged in
+    # handle edit form
+    # if post is successful, redirect to user page
+    # if unsuccessful, redirect to home and flash message
 
-    # IMPLEMENT THIS
+    if not g.user:
+        flash("You are not currently logged in!")
+        return redirect("/")
+
+    form = EditUserForm(obj=g.user)
+
+    if form.validate_on_submit():
+
+        password = form.password.data
+
+        if not User.authenticate(g.user.username, password):
+            # if password dont match
+            flash("Please enter the correct username/password to edit this profile.")
+            return render_template("/users/edit.html", form=form, csrf_form=g.csrf)
+
+        # validation success, handle edit
+        g.user.username = form.username.data
+        g.user.email = form.email.data
+        g.user.image_url = form.image_url.data
+        g.user.header_image_url = form.header_image_url.data
+        g.user.bio = form.bio.data
+
+        db.session.commit()
+
+        return redirect(f"/users/{g.user.id}")
+
+    return render_template("/users/edit.html", form=form, csrf_form=g.csrf)
 
 
-@app.post('/users/delete')
+@ app.post('/users/delete')
 def delete_user():
     """Delete user."""
 
@@ -241,7 +269,7 @@ def delete_user():
 ##############################################################################
 # Messages routes:
 
-@app.route('/messages/new', methods=["GET", "POST"])
+@ app.route('/messages/new', methods=["GET", "POST"])
 def messages_add():
     """Add a message:
 
@@ -253,7 +281,6 @@ def messages_add():
         return redirect("/")
 
     form = MessageForm()
-    csrf_form = CSRFOnlyForm()
 
     if form.validate_on_submit():
         msg = Message(text=form.text.data)
@@ -262,19 +289,19 @@ def messages_add():
 
         return redirect(f"/users/{g.user.id}")
 
-    return render_template('messages/new.html', form=form, csrf_form=csrf_form)
+    return render_template('messages/new.html', form=form, csrf_form=g.csrf)
 
 
-@app.get('/messages/<int:message_id>')
+@ app.get('/messages/<int:message_id>')
 def messages_show(message_id):
     """Show a message."""
 
     msg = Message.query.get(message_id)
-    csrf_form = CSRFOnlyForm()
-    return render_template('messages/show.html', message=msg, csrf_form=csrf_form)
+
+    return render_template('messages/show.html', message=msg, csrf_form=g.csrf)
 
 
-@app.post('/messages/<int:message_id>/delete')
+@ app.post('/messages/<int:message_id>/delete')
 def messages_destroy(message_id):
     """Delete a message."""
 
@@ -293,14 +320,13 @@ def messages_destroy(message_id):
 # Homepage and error pages
 
 
-@app.get('/')
+@ app.get('/')
 def homepage():
     """Show homepage:
 
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
-    csrf_form = CSRFOnlyForm()
 
     if g.user:
         messages = (Message
@@ -309,10 +335,10 @@ def homepage():
                     .limit(100)
                     .all())
 
-        return render_template('home.html', messages=messages, csrf_form=csrf_form)
+        return render_template('home.html', messages=messages, csrf_form=g.csrf)
 
     else:
-        return render_template('home-anon.html', csrf_form=csrf_form)
+        return render_template('home-anon.html', csrf_form=g.csrf)
 
 
 ##############################################################################
@@ -322,7 +348,7 @@ def homepage():
 #
 # https://stackoverflow.com/questions/34066804/disabling-caching-in-flask
 
-@app.after_request
+@ app.after_request
 def add_header(response):
     """Add non-caching headers on every request."""
 
