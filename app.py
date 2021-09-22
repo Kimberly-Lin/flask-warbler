@@ -3,9 +3,13 @@ import os
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import Unauthorized
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import CSRFOnlyForm, UserAddForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message
+
+import dotenv
+dotenv.load_dotenv()
 
 CURR_USER_KEY = "curr_user"
 
@@ -22,6 +26,7 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
+# question: we need this for all routes, is it bad to put it was global variable?
 
 ##############################################################################
 # User signup/login/logout
@@ -64,6 +69,7 @@ def signup():
     """
 
     form = UserAddForm()
+    csrf_form = CSRFOnlyForm()
 
     if form.validate_on_submit():
         try:
@@ -77,14 +83,14 @@ def signup():
 
         except IntegrityError:
             flash("Username already taken", 'danger')
-            return render_template('users/signup.html', form=form)
+            return render_template('users/signup.html', form=form, csrf_form=csrf_form)
 
         do_login(user)
 
         return redirect("/")
 
     else:
-        return render_template('users/signup.html', form=form)
+        return render_template('users/signup.html', form=form, csrf_form=csrf_form)
 
 
 @app.route('/login', methods=["GET", "POST"])
@@ -92,6 +98,7 @@ def login():
     """Handle user login."""
 
     form = LoginForm()
+    csrf_form = CSRFOnlyForm()
 
     if form.validate_on_submit():
         user = User.authenticate(form.username.data,
@@ -104,15 +111,22 @@ def login():
 
         flash("Invalid credentials.", 'danger')
 
-    return render_template('users/login.html', form=form)
+    return render_template('users/login.html', form=form, csrf_form=csrf_form)
 
 
 @app.post('/logout')
 def logout():
     """Handle logout of user."""
 
-    # IMPLEMENT THIS AND FIX BUG
-    # DO NOT CHANGE METHOD ON ROUTE
+    form = CSRFOnlyForm()
+
+    if form.validate_on_submit():
+        do_logout()
+        flash('Logged out successfully!')
+
+        return redirect("/login")
+
+    # raise Unauthorized()
 
 
 ##############################################################################
@@ -124,15 +138,15 @@ def list_users():
 
     Can take a 'q' param in querystring to search by that username.
     """
-
     search = request.args.get('q')
+    csrf_form = CSRFOnlyForm()
 
     if not search:
         users = User.query.all()
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users)
+    return render_template('users/index.html', users=users, csrf_form=csrf_form)
 
 
 @app.get('/users/<int:user_id>')
@@ -140,8 +154,9 @@ def users_show(user_id):
     """Show user profile."""
 
     user = User.query.get_or_404(user_id)
+    csrf_form = CSRFOnlyForm()
 
-    return render_template('users/show.html', user=user)
+    return render_template('users/show.html', user=user, csrf_form=csrf_form)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -153,7 +168,8 @@ def show_following(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user)
+    csrf_form = CSRFOnlyForm()
+    return render_template('users/following.html', user=user, csrf_form=csrf_form)
 
 
 @app.get('/users/<int:user_id>/followers')
@@ -165,7 +181,8 @@ def users_followers(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user)
+    csrf_form = CSRFOnlyForm()
+    return render_template('users/followers.html', user=user, csrf_form=csrf_form)
 
 
 @app.post('/users/follow/<int:follow_id>')
@@ -236,6 +253,7 @@ def messages_add():
         return redirect("/")
 
     form = MessageForm()
+    csrf_form = CSRFOnlyForm()
 
     if form.validate_on_submit():
         msg = Message(text=form.text.data)
@@ -244,7 +262,7 @@ def messages_add():
 
         return redirect(f"/users/{g.user.id}")
 
-    return render_template('messages/new.html', form=form)
+    return render_template('messages/new.html', form=form, csrf_form=csrf_form)
 
 
 @app.get('/messages/<int:message_id>')
@@ -252,7 +270,8 @@ def messages_show(message_id):
     """Show a message."""
 
     msg = Message.query.get(message_id)
-    return render_template('messages/show.html', message=msg)
+    csrf_form = CSRFOnlyForm()
+    return render_template('messages/show.html', message=msg, csrf_form=csrf_form)
 
 
 @app.post('/messages/<int:message_id>/delete')
@@ -281,6 +300,7 @@ def homepage():
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
+    csrf_form = CSRFOnlyForm()
 
     if g.user:
         messages = (Message
@@ -289,10 +309,10 @@ def homepage():
                     .limit(100)
                     .all())
 
-        return render_template('home.html', messages=messages)
+        return render_template('home.html', messages=messages, csrf_form=csrf_form)
 
     else:
-        return render_template('home-anon.html')
+        return render_template('home-anon.html', csrf_form=csrf_form)
 
 
 ##############################################################################
