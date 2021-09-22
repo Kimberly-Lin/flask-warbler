@@ -8,6 +8,11 @@ body.error-404 {
   background-color: #1da1f2;
 }
 
+/* #banner-img {
+  max-width: 100%;
+  height: auto;  
+} */
+
 .form-control {
   margin-bottom: 20px;
 }
