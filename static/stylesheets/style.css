@@ -489,6 +489,12 @@ p.card-bio {
 
 /* =========================== Message Show page */
 
+.far {
+  font-size: 50px;
+  position: absolute;
+  top: 25%
+}
+
 .bg {
   position: absolute;
   top: 0;
