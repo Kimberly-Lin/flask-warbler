@@ -177,30 +177,35 @@ class Message(db.Model):
 
     user = db.relationship('User')
 
-    # liked_users = db.relationship(
-    #     "User", secondary="likes", backref="liked_messages")
+    liked_users = db.relationship(
+        "User", secondary="likes", backref="liked_messages")
+
+    # Messages.liked_users --> list of users that liked this message
+    # Users.liked_messages --> list of messages a user has liked
+
+    likes = db.relationship("Like", backref="message")
 
 
-# class Like(db.Model):
-#     """Each like """
+class Like(db.Model):
+    """Each like """
 
-#     __tablename__ = 'likes'
+    __tablename__ = 'likes'
 
-#     id = db.Column(
-#         db.Integer,
-#         primary_key=True,
-#     )
-#     liked_user_id = db.Column(
-#         db.Integer,
-#         db.ForeignKey('users.id', ondelete='CASCADE'),
-#         nullable=False,
-#     )
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+    liked_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False,
+    )
 
-#     liked_message_id = db.Column(
-#         db.Integer,
-#         db.ForeignKey('messages.id', ondelete='CASCADE'),
-#         nullable=False,
-#     )
+    liked_message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete='CASCADE'),
+        nullable=False,
+    )
 
 
 def connect_db(app):

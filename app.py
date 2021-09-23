@@ -197,8 +197,7 @@ def add_follow(follow_id):
 
         return redirect(f"/users/{g.user.id}/following")
 
-    return redirect ('/users')
-
+    return redirect('/users')
 
 
 @app.post('/users/stop-following/<int:follow_id>')
@@ -306,7 +305,6 @@ def messages_show(message_id):
 
 @ app.post('/messages/<int:message_id>/delete')
 def messages_destroy(message_id):
-
     """Delete a message."""
 
     if not g.user:
