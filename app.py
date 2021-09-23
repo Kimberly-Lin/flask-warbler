@@ -3,10 +3,9 @@ import os
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
-from werkzeug.exceptions import Unauthorized
 
 from forms import CSRFOnlyForm, EditUserForm, UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message, IMAGE_URL_DEFAULT, HEADER_IMAGE_URL_DEFAULT
+from models import db, connect_db, User, Message
 
 import dotenv
 dotenv.load_dotenv()
@@ -184,7 +183,6 @@ def users_followers(user_id):
 
 
 @app.post('/users/follow/<int:follow_id>')
-# TODO: implement form for CSRF protection
 def add_follow(follow_id):
     """Add a follow for the currently-logged-in user."""
 
@@ -192,15 +190,18 @@ def add_follow(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get_or_404(follow_id)
-    g.user.following.append(followed_user)
-    db.session.commit()
+    if g.csrf.validate_on_submit():
+        followed_user = User.query.get_or_404(follow_id)
+        g.user.following.append(followed_user)
+        db.session.commit()
 
-    return redirect(f"/users/{g.user.id}/following")
+        return redirect(f"/users/{g.user.id}/following")
+
+    return redirect ('/users')
+
 
 
 @app.post('/users/stop-following/<int:follow_id>')
-# TODO: implement form for CSRF protection
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user."""
 
@@ -208,11 +209,14 @@ def stop_following(follow_id):
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    followed_user = User.query.get(follow_id)
-    g.user.following.remove(followed_user)
-    db.session.commit()
+    if g.csrf.validate_on_submit():
+        followed_user = User.query.get(follow_id)
+        g.user.following.remove(followed_user)
+        db.session.commit()
 
-    return redirect(f"/users/{g.user.id}/following")
+        return redirect(f"/users/{g.user.id}/following")
+
+    return redirect('/users')
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
@@ -229,26 +233,24 @@ def edit_user_profile():
 
         password = form.password.data
 
-        if not User.authenticate(g.user.username, password):
-            # if password don't match
-            flash("Please enter the correct username/password to edit this profile.")
-            return render_template("/users/edit.html", form=form)
+        if User.authenticate(g.user.username, password):
+            # validation success, handle edit
+            g.user.username = form.username.data
+            g.user.email = form.email.data
+            g.user.image_url = form.image_url.data or User.image_url.default.arg
+            g.user.header_image_url = form.header_image_url.data or User.header_image_url.default.arg
+            g.user.bio = form.bio.data
+            db.session.commit()
 
-        # validation success, handle edit
-        g.user.username = form.username.data
-        g.user.email = form.email.data
-        g.user.image_url = form.image_url.data or IMAGE_URL_DEFAULT
-        g.user.header_image_url = form.header_image_url.data or HEADER_IMAGE_URL_DEFAULT
-        g.user.bio = form.bio.data
-        db.session.commit()
+            return redirect(f"/users/{g.user.id}")
 
-        return redirect(f"/users/{g.user.id}")
+        else:
+            form.password.errors = ["Please enter correct credentials."]
 
     return render_template("/users/edit.html", form=form)
 
 
 @ app.post('/users/delete')
-# TODO: PUT THIS IN A FORM FOR CSRF PROTECTION
 def delete_user():
     """Delete user."""
 
@@ -256,12 +258,15 @@ def delete_user():
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    do_logout()
+    if g.csrf.validate_on_submit():
+        do_logout()
 
-    db.session.delete(g.user)
-    db.session.commit()
+        db.session.delete(g.user)
+        db.session.commit()
 
-    return redirect("/signup")
+        return redirect("/signup")
+
+    return redirect("/")
 
 
 ##############################################################################
@@ -301,18 +306,21 @@ def messages_show(message_id):
 
 @ app.post('/messages/<int:message_id>/delete')
 def messages_destroy(message_id):
-    # TODO: implement form for CSRF protection
+
     """Delete a message."""
 
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    msg = Message.query.get(message_id)
-    db.session.delete(msg)
-    db.session.commit()
+    if g.csrf.validate_on_submit():
+        msg = Message.query.get(message_id)
+        db.session.delete(msg)
+        db.session.commit()
 
-    return redirect(f"/users/{g.user.id}")
+        return redirect(f"/users/{g.user.id}")
+
+    return redirect(f'/messages/{message_id}')
 
 
 ##############################################################################
