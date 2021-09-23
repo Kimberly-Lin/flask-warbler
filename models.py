@@ -183,23 +183,17 @@ class Message(db.Model):
     # Messages.liked_users --> list of users that liked this message
     # Users.liked_messages --> list of messages a user has liked
 
-    likes = db.relationship("Like", backref="message")
-
 
 class Like(db.Model):
     """Each like """
 
     __tablename__ = 'likes'
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True,
-    )
     liked_user_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id', ondelete='CASCADE'),
         nullable=False,
-        primary_key=True
+        primary_key=True #FIXME: why does the primary key allow duplicate likes
     )
 
     liked_message_id = db.Column(

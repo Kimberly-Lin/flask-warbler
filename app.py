@@ -326,15 +326,20 @@ def messages_destroy(message_id):
 @app.post("/users/<int:user_id>/message/<int:msg_id>/likes")
 def handle_user_liking_messages(user_id, msg_id):
     """Handles user liking message and updates likes table in database"""
-
     if not g.user:
         flash("Access unauthorized.", "danger")
 
     elif g.csrf.validate_on_submit():
-        new_like = Like(liked_user_id=user_id, liked_message_id=msg_id)
-
-        db.session.add(new_like)
-        db.session.commit()
+        is_liked = msg_id in [msg.id for msg in g.user.liked_messages]
+        # breakpoint()
+        if is_liked:
+            like = Like.query.filter(Like.liked_user_id==user_id, Like.liked_message_id==msg_id).all()
+            db.session.delete(like)
+            db.session.commit()
+        else:
+            like = Like(liked_user_id=user_id, liked_message_id=msg_id)
+            db.session.add(like)
+            db.session.commit()
 
     return redirect("/")
 
