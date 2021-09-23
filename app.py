@@ -128,7 +128,7 @@ def logout():
 
         return redirect("/login")
 
-    # raise Unauthorized()
+    return redirect("/")
 
 
 ##############################################################################
@@ -214,12 +214,8 @@ def stop_following(follow_id):
 
 
 @app.route('/users/profile', methods=["GET", "POST"])
-def profile():
+def edit_user_profile():
     """Update profile for current user."""
-    # check if current user is logged in
-    # handle edit form
-    # if post is successful, redirect to user page
-    # if unsuccessful, redirect to home and flash message
 
     if not g.user:
         flash("You are not currently logged in!")
@@ -232,14 +228,14 @@ def profile():
         password = form.password.data
 
         if not User.authenticate(g.user.username, password):
-            # if password dont match
+            # if password don't match
             flash("Please enter the correct username/password to edit this profile.")
             return render_template("/users/edit.html", form=form, csrf_form=g.csrf)
 
         # validation success, handle edit
         g.user.username = form.username.data
         g.user.email = form.email.data
-        g.user.image_url = form.image_url.data
+        g.user.image_url = form.image_url.data #TODO: Make sure blank images get a default appended and remove the required field
         g.user.header_image_url = form.header_image_url.data
         g.user.bio = form.bio.data
 
@@ -327,10 +323,12 @@ def homepage():
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
     """
-
     if g.user:
+        followers_list_ids = [follower.id for follower in g.user.following] + [g.user.id]
+
         messages = (Message
                     .query
+                    .filter(Message.user_id.in_(followers_list_ids))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
                     .all())
