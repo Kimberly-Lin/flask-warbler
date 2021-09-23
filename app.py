@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import Unauthorized
 
 from forms import CSRFOnlyForm, EditUserForm, UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, IMAGE_URL_DEFAULT, HEADER_IMAGE_URL_DEFAULT
 
 import dotenv
 dotenv.load_dotenv()
@@ -88,14 +88,14 @@ def signup():
 
         except IntegrityError:
             flash("Username already taken", 'danger')
-            return render_template('users/signup.html', form=form, csrf_form=g.csrf)
+            return render_template('users/signup.html', form=form)
 
         do_login(user)
 
         return redirect("/")
 
     else:
-        return render_template('users/signup.html', form=form, csrf_form=g.csrf)
+        return render_template('users/signup.html', form=form)
 
 
 @app.route('/login', methods=["GET", "POST"])
@@ -115,7 +115,7 @@ def login():
 
         flash("Invalid credentials.", 'danger')
 
-    return render_template('users/login.html', form=form, csrf_form=g.csrf)
+    return render_template('users/login.html', form=form)
 
 
 @app.post('/logout')
@@ -147,7 +147,7 @@ def list_users():
     else:
         users = User.query.filter(User.username.like(f"%{search}%")).all()
 
-    return render_template('users/index.html', users=users, csrf_form=g.csrf)
+    return render_template('users/index.html', users=users)
 
 
 @app.get('/users/<int:user_id>')
@@ -156,7 +156,7 @@ def users_show(user_id):
 
     user = User.query.get_or_404(user_id)
 
-    return render_template('users/show.html', user=user, csrf_form=g.csrf)
+    return render_template('users/show.html', user=user)
 
 
 @app.get('/users/<int:user_id>/following')
@@ -168,7 +168,7 @@ def show_following(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/following.html', user=user, csrf_form=g.csrf)
+    return render_template('users/following.html', user=user)
 
 
 @app.get('/users/<int:user_id>/followers')
@@ -180,10 +180,11 @@ def users_followers(user_id):
         return redirect("/")
 
     user = User.query.get_or_404(user_id)
-    return render_template('users/followers.html', user=user, csrf_form=g.csrf)
+    return render_template('users/followers.html', user=user)
 
 
 @app.post('/users/follow/<int:follow_id>')
+# TODO: implement form for CSRF protection
 def add_follow(follow_id):
     """Add a follow for the currently-logged-in user."""
 
@@ -199,6 +200,7 @@ def add_follow(follow_id):
 
 
 @app.post('/users/stop-following/<int:follow_id>')
+# TODO: implement form for CSRF protection
 def stop_following(follow_id):
     """Have currently-logged-in-user stop following this user."""
 
@@ -230,23 +232,23 @@ def edit_user_profile():
         if not User.authenticate(g.user.username, password):
             # if password don't match
             flash("Please enter the correct username/password to edit this profile.")
-            return render_template("/users/edit.html", form=form, csrf_form=g.csrf)
+            return render_template("/users/edit.html", form=form)
 
         # validation success, handle edit
         g.user.username = form.username.data
         g.user.email = form.email.data
-        g.user.image_url = form.image_url.data #TODO: Make sure blank images get a default appended and remove the required field
-        g.user.header_image_url = form.header_image_url.data
+        g.user.image_url = form.image_url.data or IMAGE_URL_DEFAULT
+        g.user.header_image_url = form.header_image_url.data or HEADER_IMAGE_URL_DEFAULT
         g.user.bio = form.bio.data
-
         db.session.commit()
 
         return redirect(f"/users/{g.user.id}")
 
-    return render_template("/users/edit.html", form=form, csrf_form=g.csrf)
+    return render_template("/users/edit.html", form=form)
 
 
 @ app.post('/users/delete')
+# TODO: PUT THIS IN A FORM FOR CSRF PROTECTION
 def delete_user():
     """Delete user."""
 
@@ -285,7 +287,7 @@ def messages_add():
 
         return redirect(f"/users/{g.user.id}")
 
-    return render_template('messages/new.html', form=form, csrf_form=g.csrf)
+    return render_template('messages/new.html', form=form)
 
 
 @ app.get('/messages/<int:message_id>')
@@ -294,11 +296,12 @@ def messages_show(message_id):
 
     msg = Message.query.get(message_id)
 
-    return render_template('messages/show.html', message=msg, csrf_form=g.csrf)
+    return render_template('messages/show.html', message=msg)
 
 
 @ app.post('/messages/<int:message_id>/delete')
 def messages_destroy(message_id):
+    # TODO: implement form for CSRF protection
     """Delete a message."""
 
     if not g.user:
@@ -324,7 +327,8 @@ def homepage():
     - logged in: 100 most recent messages of followed_users
     """
     if g.user:
-        followers_list_ids = [follower.id for follower in g.user.following] + [g.user.id]
+        followers_list_ids = [
+            follower.id for follower in g.user.following] + [g.user.id]
 
         messages = (Message
                     .query
@@ -333,10 +337,10 @@ def homepage():
                     .limit(100)
                     .all())
 
-        return render_template('home.html', messages=messages, csrf_form=g.csrf)
+        return render_template('home.html', messages=messages)
 
     else:
-        return render_template('home-anon.html', csrf_form=g.csrf)
+        return render_template('home-anon.html')
 
 
 ##############################################################################

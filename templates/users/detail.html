@@ -2,9 +2,8 @@
 
 {% block content %}
 
-<div id="warbler-hero" class="full-width">
-  <img src="{{user.header_image_url}}" alt="Banner image for {{ user.username }}" id="banner-img">
-  <!-- FIXME: make image honor parent div size -->
+<div id="warbler-hero" class="full-width"
+  style="background-image:url({{user.header_image_url}}); background-size:cover">
 </div>
 <img src="{{ user.image_url }}" alt="Image for {{ user.username }}" id="profile-avatar">
 <div class="row full-width">

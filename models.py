@@ -8,6 +8,9 @@ from flask_sqlalchemy import SQLAlchemy
 bcrypt = Bcrypt()
 db = SQLAlchemy()
 
+IMAGE_URL_DEFAULT = "/static/images/default-pic.png"
+HEADER_IMAGE_URL_DEFAULT = "/static/images/warbler-hero.jpg"
+
 
 class Follows(db.Model):
     """Connection of a follower <-> followed_user."""
@@ -51,12 +54,12 @@ class User(db.Model):
 
     image_url = db.Column(
         db.Text,
-        default="/static/images/default-pic.png",
+        default=IMAGE_URL_DEFAULT
     )
 
     header_image_url = db.Column(
         db.Text,
-        default="/static/images/warbler-hero.jpg"
+        default=HEADER_IMAGE_URL_DEFAULT
     )
 
     bio = db.Column(
@@ -173,6 +176,31 @@ class Message(db.Model):
     )
 
     user = db.relationship('User')
+
+    liked_users = db.relationship(
+        "User", secondary="likes", backref="liked_messages")
+
+
+class Like(db.Model):
+    """Each like """
+
+    __tablename__ = 'likes'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+    )
+    liked_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False,
+    )
+
+    liked_message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('messages.id', ondelete='CASCADE'),
+        nullable=False,
+    )
 
 
 def connect_db(app):
