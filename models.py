@@ -199,12 +199,14 @@ class Like(db.Model):
         db.Integer,
         db.ForeignKey('users.id', ondelete='CASCADE'),
         nullable=False,
+        primary_key=True
     )
 
     liked_message_id = db.Column(
         db.Integer,
         db.ForeignKey('messages.id', ondelete='CASCADE'),
         nullable=False,
+        primary_key=True
     )
 
 

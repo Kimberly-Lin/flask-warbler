@@ -489,11 +489,21 @@ p.card-bio {
 
 /* =========================== Message Show page */
 
-.far {
+.fa-grin-squint-tears {
   font-size: 50px;
   position: absolute;
-  top: 25%
+  top: 25%;
+  z-index: 2;
 }
+
+/* #like_button{
+  position: absolute;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index: 2;
+} */
 
 .bg {
   position: absolute;

@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import CSRFOnlyForm, EditUserForm, UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Like
 
 import dotenv
 dotenv.load_dotenv()
@@ -320,6 +320,23 @@ def messages_destroy(message_id):
 
     return redirect(f'/messages/{message_id}')
 
+# question: does this seem like a good name for the route?
+
+
+@app.post("/users/<int:user_id>/message/<int:msg_id>/likes")
+def handle_user_liking_messages(user_id, msg_id):
+    """Handles user liking message and updates likes table in database"""
+
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+
+    elif g.csrf.validate_on_submit():
+        new_like = Like(liked_user_id=user_id, liked_message_id=msg_id)
+
+        db.session.add(new_like)
+        db.session.commit()
+
+    return redirect("/")
 
 ##############################################################################
 # Homepage and error pages

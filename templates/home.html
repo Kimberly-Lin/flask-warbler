@@ -47,20 +47,26 @@
       {% for msg in messages %}
       <li class="list-group-item row">
         <div class="col-10">
-          <a href="/messages/{{ msg.id }}" class="message-link" />
-          <a href="/users/{{ msg.user.id }}">
-            <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
-          </a>
-          <div class="message-area">
-            <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
-            <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
-            <p>{{ msg.text }}</p>
-          </div>
+          <a href="/messages/{{ msg.id }}" class="message-link">
+            <a href="/users/{{ msg.user.id }}">
+              <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
+            </a>
+            <div class="message-area">
+              <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
+              <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
+              <p>{{ msg.text }}</p>
+            </div>
         </div>
-        <div class="col-2">
-          <form method="POST" action="/user/{{g.user.id}}/messages/likes">
+        <div class="col-2" id="like_button">
+          <form method="POST" action="/users/{{g.user.id}}/message/{{msg.id}}/likes">
             {{ g.csrf.hidden_tag() }}
-            <i class="far fa-grin-squint-tears"></i>
+            <button type=submit>
+              {% if msg.id in g.user.liked_messages %}
+              <i class="fas fa-grin-squint-tears"></i>
+              {% else %}
+              <i class="far fa-grin-squint-tears"></i>
+              {% endif %}
+            </button>
           </form>
         </div>
       </li>
