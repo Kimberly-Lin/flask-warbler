@@ -4,14 +4,16 @@
 #
 #    python -m unittest test_user_model.py
 
+import os
+
+os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
 
 from app import app
 from unittest import TestCase
+from sqlalchemy.sql.schema import UniqueConstraint
 from models import db, User, Message, Follows
-import os
-
 from flask_wtf import form
-os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
+from sqlalchemy import exc
 
 
 # BEFORE we import our app, let's set an environmental variable
@@ -119,23 +121,56 @@ class UserModelTestCase(TestCase):
 
         self.assertEqual(self.u1.is_followed_by(self.u2), False)
 
-    def test_valid_user_signup(self):
+    def test_valid_user_classmethod_signup(self):
+        """Tests for a valid user signup"""
+      
+        num_users_before = len(User.query.all())
+
+        User.signup(
+            username = 'testuser',
+            email = 'test@test.com',
+            password = 'password',
+            image_url = 'https://image.cnbcfm.com/api/v1/image/105992231-1561667465295gettyimages-521697453.jpeg?v=1561667497&w=1600&h=900'
+        )
+
+        self.assertEqual(len(User.query.all()), num_users_before + 1)
+    
+    def test_invalid_user_classmethod_signup_dupe_username(self):
         """Tests for a valid user signup"""
 
-        with app.test_client() as client:
-            user_signup_data = {
-                'email': 'test@test.com',
-                'username': 'test_user',
-                'password': 'HASHED_PASSWORD'
-            }
+        User.signup(
+            username = 'testuser1',
+            email = 'test@test.com',
+            password = 'password',
+            image_url = 'https://image.cnbcfm.com/api/v1/image/105992231-1561667465295gettyimages-521697453.jpeg?v=1561667497&w=1600&h=900'
+        )
 
-            num_users_before = len(User.query.all())
-            resp = client.post("/signup", data=user_signup_data)
+        self.assertRaises(exc.IntegrityError)
+    
+    def test_invalid_user_classmethod_signup_bad_email(self):
+        """Tests for a valid user signup"""
 
-            self.assertEqual(resp.status_code, 302)
-            self.assertEqual(len(User.query.all()), num_users_before + 1)
+        User.signup(
+            username = 'testuser',
+            email = 'test.com',
+            password = 'password',
+            image_url = 'https://image.cnbcfm.com/api/v1/image/105992231-1561667465295gettyimages-521697453.jpeg?v=1561667497&w=1600&h=900'
+        )
 
-        # Does User.signup fail to create a new user if any of the validations (eg uniqueness, non-nullable fields) fail?
+        self.assertRaises(exc.IntegrityError)
+    
+    def test_invalid_user_classmethod_signup_no_username_input(self):
+        """Tests for a valid user signup"""
+
+        User.signup(
+            username = None,
+            email = 'test.com',
+            password = 'password',
+            image_url = 'https://image.cnbcfm.com/api/v1/image/105992231-1561667465295gettyimages-521697453.jpeg?v=1561667497&w=1600&h=900'
+        )
+
+        self.assertRaises(exc.IntegrityError)
+    
         # Does User.authenticate successfully return a user when given a valid username and password?
         # Does User.authenticate fail to return a user when the username is invalid?
         # Does User.authenticate fail to return a user when the password is invalid
