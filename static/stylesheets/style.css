@@ -496,14 +496,10 @@ p.card-bio {
   z-index: 2;
 }
 
-/* #like_button{
-  position: absolute;
-  top:0;
-  left:0;
-  right:0;
-  bottom:0;
-  z-index: 2;
-} */
+.like-button{
+  background-color: white;
+  border: none
+}
 
 .bg {
   position: absolute;

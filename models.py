@@ -177,6 +177,7 @@ class Message(db.Model):
 
     user = db.relationship('User')
 
+    # could have better name, users_liked might make more sense
     liked_users = db.relationship(
         "User", secondary="likes", backref="liked_messages")
 
@@ -186,20 +187,20 @@ class Message(db.Model):
 
 class Like(db.Model):
     """Each like """
+    # could have better docstring
 
     __tablename__ = 'likes'
 
+    # could just be user_id and message_id
     liked_user_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id', ondelete='CASCADE'),
-        nullable=False,
-        primary_key=True #FIXME: why does the primary key allow duplicate likes
+        primary_key=True
     )
 
     liked_message_id = db.Column(
         db.Integer,
         db.ForeignKey('messages.id', ondelete='CASCADE'),
-        nullable=False,
         primary_key=True
     )
 

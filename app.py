@@ -19,13 +19,11 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = False
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
-
-# question: we need this for all routes, is it bad to put it was global variable?
 
 ##############################################################################
 # User signup/login/logout
@@ -320,28 +318,65 @@ def messages_destroy(message_id):
 
     return redirect(f'/messages/{message_id}')
 
-# question: does this seem like a good name for the route?
+# shorten url, don't need user_id
+# rule of thumb is good to break like and unlike because potency
 
 
-@app.post("/users/<int:user_id>/message/<int:msg_id>/likes")
-def handle_user_liking_messages(user_id, msg_id):
-    """Handles user liking message and updates likes table in database"""
+@app.post("/message/<int:msg_id>/likes")
+def handle_user_like_unlike_messages_from_home(msg_id):
+    """Handles user liking and unliking message from home and updates likes table in database"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    if g.csrf.validate_on_submit():
+        is_liked = msg_id in [msg.id for msg in g.user.liked_messages]
+
+        if is_liked:
+
+            like = Like.query.get((g.user.id, msg_id))
+
+            # use ORM, append and remove from list of liked messages instead of deleting
+            db.session.delete(like)
+            db.session.commit()
+        else:
+            like = Like(liked_user_id=g.user.id, liked_message_id=msg_id)
+            db.session.add(like)
+            db.session.commit()
+
+    return redirect("/")
+
+
+@app.get("/liked_messages")
+def show_user_liked_messages(user_id):
+    """Displays list of liked messages by user"""
+    liked_messages = User.query.get(user_id).liked_messages
+
+    return render_template("/messages/liked_msg.html", messages=liked_messages)
+
+
+@app.post("/message/<int:msg_id>/liked_messages")
+def handle_user_like_unlike_messages_from_list_of_liked_messages(user_id, msg_id):
+    """Handles user liking and unliking message on liked messages page, updates likes table in database"""
+
     if not g.user:
         flash("Access unauthorized.", "danger")
 
     elif g.csrf.validate_on_submit():
         is_liked = msg_id in [msg.id for msg in g.user.liked_messages]
-        # breakpoint()
+
         if is_liked:
-            like = Like.query.filter(Like.liked_user_id==user_id, Like.liked_message_id==msg_id).all()
+
+            like = Like.query.get((user_id, msg_id))
             db.session.delete(like)
             db.session.commit()
+
         else:
             like = Like(liked_user_id=user_id, liked_message_id=msg_id)
             db.session.add(like)
             db.session.commit()
 
-    return redirect("/")
+    return redirect("/liked_messages")
 
 ##############################################################################
 # Homepage and error pages

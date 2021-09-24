@@ -41,8 +41,8 @@
       </div>
     </div>
   </aside>
-
   <div class="col-lg-6 col-md-8 col-sm-12">
+    <h1 class="text-danger"> HERE ARE YOUR LIKED MESSAGES!!!!!</h1>
     <ul class="list-group" id="messages">
       {% for msg in messages %}
       <li class="list-group-item row">
@@ -58,10 +58,9 @@
             </div>
         </div>
         <div class="col-2">
-          <form method="POST" action="/message/{{msg.id}}/likes">
+          <form method="POST" action="/message/{{msg.id}}/liked_messages">
             {{ g.csrf.hidden_tag() }}
             <button type=submit class="like-button">
-              <!-- this is O(M*N), can make it O(M+N)if we import a set and only check if message is in set-->
               {% if msg in g.user.liked_messages %}
               <i class="fas fa-grin-squint-tears"></i>
               {% else %}
