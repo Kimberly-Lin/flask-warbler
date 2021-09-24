@@ -322,22 +322,30 @@ def messages_destroy(message_id):
 # rule of thumb is good to break like and unlike because potency
 
 
-@app.post("/message/<int:msg_id>/likes")
-def handle_user_like_unlike_messages_from_home(msg_id):
-    """Handles user liking and unliking message from home and updates likes table in database"""
+@app.post("/message/<int:msg_id>/unlike")
+def handle_user_unlike_messages_from_home(msg_id):
+    """Handles user unliking message from home and updates likes table in database"""
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
     if g.csrf.validate_on_submit():
-        is_liked = msg_id in [msg.id for msg in g.user.liked_messages]
+        g.user.liked_messages.remove(Message.query.get_or_404(msg_id))
+        db.session.commit()
 
-        if is_liked:
-            g.user.liked_messages.remove(Message.query.get_or_404(msg_id))
-            db.session.commit()
-        else:
-            g.user.liked_messages.append(Message.query.get_or_404(msg_id))
-            db.session.commit()
+    return redirect("/")
+
+
+@app.post("/message/<int:msg_id>/like")
+def handle_user_like_messages_from_home(msg_id):
+    """Handles user liking message from home and updates likes table in database"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    if g.csrf.validate_on_submit():
+        g.user.liked_messages.append(Message.query.get_or_404(msg_id))
+        db.session.commit()
 
     return redirect("/")
 
@@ -350,28 +358,33 @@ def show_user_liked_messages():
     return render_template("/messages/liked_msg.html", messages=liked_messages)
 
 
-@app.post("/message/<int:msg_id>/liked_messages")
-def handle_user_like_unlike_messages_from_list_of_liked_messages(msg_id):
-    """Handles user liking and unliking message on liked messages page, updates likes table in database"""
-
+@app.post("/message/<int:msg_id>/liked_messages/unlike")
+def handle_user_unlike_messages_from_liked_messages(msg_id):
+    """Handles user unliking message from liked messages and updates likes table in database"""
     if not g.user:
         flash("Access unauthorized.", "danger")
+        return redirect("/")
 
-    elif g.csrf.validate_on_submit():
-        is_liked = msg_id in [msg.id for msg in g.user.liked_messages]
-
-        if is_liked:
-
-            like = Like.query.get((g.user.id, msg_id))
-            db.session.delete(like)
-            db.session.commit()
-
-        else:
-            like = Like(liked_user_id=g.user.id, liked_message_id=msg_id)
-            db.session.add(like)
-            db.session.commit()
+    if g.csrf.validate_on_submit():
+        g.user.liked_messages.remove(Message.query.get_or_404(msg_id))
+        db.session.commit()
 
     return redirect("/liked_messages")
+
+
+@app.post("/message/<int:msg_id>/liked_messages/like")
+def handle_user_like_messages_from_liked_messages(msg_id):
+    """Handles user liking message from liked messages and updates likes table in database"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    if g.csrf.validate_on_submit():
+        g.user.liked_messages.append(Message.query.get_or_404(msg_id))
+        db.session.commit()
+
+    return redirect("/liked_messages")
+
 
 ##############################################################################
 # Homepage and error pages

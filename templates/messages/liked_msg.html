@@ -58,16 +58,23 @@
             </div>
         </div>
         <div class="col-2">
-          <form method="POST" action="/message/{{msg.id}}/liked_messages">
+          {% if msg in g.user.liked_messages %}
+          <form method="POST" action="/message/{{msg.id}}/liked_messages/unlike">
             {{ g.csrf.hidden_tag() }}
-            <button type=submit class="like-button">
-              {% if msg in g.user.liked_messages %}
+            <button type=submit class="like-unlike-button">
+              <!-- this is O(M*N), can make it O(M+N)if we import a set and only check if message is in set-->
               <i class="fas fa-grin-squint-tears"></i>
-              {% else %}
-              <i class="far fa-grin-squint-tears"></i>
-              {% endif %}
             </button>
           </form>
+          {% else %}
+          <form method="POST" action="/message/{{msg.id}}/liked_messages/like">
+            {{ g.csrf.hidden_tag() }}
+            <button type=submit class="like-unlike-button">
+              <!-- this is O(M*N), can make it O(M+N)if we import a set and only check if message is in set-->
+              <i class="far fa-grin-squint-tears"></i>
+            </button>
+          </form>
+          {% endif %}
         </div>
       </li>
       {% endfor %}
