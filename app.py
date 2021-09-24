@@ -72,7 +72,6 @@ def signup():
     """
 
     form = UserAddForm()
-
     if form.validate_on_submit():
         try:
             user = User.signup(

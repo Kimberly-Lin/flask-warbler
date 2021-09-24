@@ -5,11 +5,13 @@
 #    python -m unittest test_user_model.py
 
 
-import os
-os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
-from models import db, User, Message, Follows
-from unittest import TestCase
 from app import app
+from unittest import TestCase
+from models import db, User, Message, Follows
+import os
+
+from flask_wtf import form
+os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
 
 
 # BEFORE we import our app, let's set an environmental variable
@@ -22,6 +24,8 @@ app.config['TESTING'] = True
 
 # This is a bit of hack, but don't use Flask DebugToolbar
 app.config['DEBUG_TB_HOSTS'] = ['dont-show-debug-toolbar']
+
+app.config['WTF_CSRF_ENABLED'] = False
 
 
 # Create our tables (we do this here, so we only create the tables
@@ -80,13 +84,14 @@ class UserModelTestCase(TestCase):
     def test_user_repr_(self):
         """Does user repr show up properly."""
 
-        self.assertEqual(repr(self.u1), f'<User #{self.u1id}: testuser1, test1@test.com>')
+        self.assertEqual(
+            repr(self.u1), f'<User #{self.u1id}: testuser1, test1@test.com>')
 
-    
     def test_success_follow(self):
         """Does is_following successfully detect when user1 is following user2?"""
 
-        u1_follows_u2 = Follows(user_being_followed_id = self.u2id, user_following_id = self.u1id)
+        u1_follows_u2 = Follows(
+            user_being_followed_id=self.u2id, user_following_id=self.u1id)
 
         db.session.add(u1_follows_u2)
         db.session.commit()
@@ -101,7 +106,8 @@ class UserModelTestCase(TestCase):
     def test_success_being_followed(self):
         """Does is_following successfully detect when user1 is being followed user2?"""
 
-        u2_follows_u1 = Follows(user_being_followed_id = self.u1id, user_following_id = self.u2id)
+        u2_follows_u1 = Follows(
+            user_being_followed_id=self.u1id, user_following_id=self.u2id)
 
         db.session.add(u2_follows_u1)
         db.session.commit()
@@ -112,8 +118,23 @@ class UserModelTestCase(TestCase):
         """Does is_followed_by successfully detect when user1 is not followed by user2?"""
 
         self.assertEqual(self.u1.is_followed_by(self.u2), False)
-    
-        # Does User.signup successfully create a new user given valid credentials?
+
+    def test_valid_user_signup(self):
+        """Tests for a valid user signup"""
+
+        with app.test_client() as client:
+            user_signup_data = {
+                'email': 'test@test.com',
+                'username': 'test_user',
+                'password': 'HASHED_PASSWORD'
+            }
+
+            num_users_before = len(User.query.all())
+            resp = client.post("/signup", data=user_signup_data)
+
+            self.assertEqual(resp.status_code, 302)
+            self.assertEqual(len(User.query.all()), num_users_before + 1)
+
         # Does User.signup fail to create a new user if any of the validations (eg uniqueness, non-nullable fields) fail?
         # Does User.authenticate successfully return a user when given a valid username and password?
         # Does User.authenticate fail to return a user when the username is invalid?
