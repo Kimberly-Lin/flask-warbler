@@ -5,6 +5,7 @@
 #    python -m unittest test_user_model.py
 
 
+from app import app
 import os
 from unittest import TestCase
 
@@ -19,7 +20,6 @@ os.environ['DATABASE_URL'] = "postgresql:///warbler_test"
 
 # Now we can import app
 
-from app import app
 
 # Create our tables (we do this here, so we only create the tables
 # once for all tests --- in each test, we'll delete the data
@@ -55,3 +55,17 @@ class UserModelTestCase(TestCase):
         # User should have no messages & no followers
         self.assertEqual(len(u.messages), 0)
         self.assertEqual(len(u.followers), 0)
+
+        # add dummy user to startup
+        # add tear down function for db rollbacks
+
+# Does the repr method work as expected?
+# Does is_following successfully detect when user1 is following user2?
+# Does is_following successfully detect when user1 is not following user2?
+# Does is_followed_by successfully detect when user1 is followed by user2?
+# Does is_followed_by successfully detect when user1 is not followed by user2?
+# Does User.signup successfully create a new user given valid credentials?
+# Does User.signup fail to create a new user if any of the validations (eg uniqueness, non-nullable fields) fail?
+# Does User.authenticate successfully return a user when given a valid username and password?
+# Does User.authenticate fail to return a user when the username is invalid?
+# Does User.authenticate fail to return a user when the password is invalid
