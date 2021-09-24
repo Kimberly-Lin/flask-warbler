@@ -182,7 +182,6 @@ class UserModelTestCase(TestCase):
 
         self.assertEqual(self.u1, user)
 
-    # Does User.authenticate fail to return a user when the username is invalid?
     def test_bad_username_authenticate_method(self):
         """Tests the authenticate method fails for an invalid username."""    
 
@@ -190,7 +189,6 @@ class UserModelTestCase(TestCase):
 
         self.assertRaises(exc.IntegrityError)
 
-    # Does User.authenticate fail to return a user when the password is invalid
     def test_invalid_user_credentials_authenticate_method(self):
         """Tests the authenticate method for invalid user credentials"""
 
