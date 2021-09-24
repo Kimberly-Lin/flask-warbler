@@ -333,30 +333,25 @@ def handle_user_like_unlike_messages_from_home(msg_id):
         is_liked = msg_id in [msg.id for msg in g.user.liked_messages]
 
         if is_liked:
-
-            like = Like.query.get((g.user.id, msg_id))
-
-            # use ORM, append and remove from list of liked messages instead of deleting
-            db.session.delete(like)
+            g.user.liked_messages.remove(Message.query.get_or_404(msg_id))
             db.session.commit()
         else:
-            like = Like(liked_user_id=g.user.id, liked_message_id=msg_id)
-            db.session.add(like)
+            g.user.liked_messages.append(Message.query.get_or_404(msg_id))
             db.session.commit()
 
     return redirect("/")
 
 
 @app.get("/liked_messages")
-def show_user_liked_messages(user_id):
+def show_user_liked_messages():
     """Displays list of liked messages by user"""
-    liked_messages = User.query.get(user_id).liked_messages
+    liked_messages = User.query.get(g.user.id).liked_messages
 
     return render_template("/messages/liked_msg.html", messages=liked_messages)
 
 
 @app.post("/message/<int:msg_id>/liked_messages")
-def handle_user_like_unlike_messages_from_list_of_liked_messages(user_id, msg_id):
+def handle_user_like_unlike_messages_from_list_of_liked_messages(msg_id):
     """Handles user liking and unliking message on liked messages page, updates likes table in database"""
 
     if not g.user:
@@ -367,12 +362,12 @@ def handle_user_like_unlike_messages_from_list_of_liked_messages(user_id, msg_id
 
         if is_liked:
 
-            like = Like.query.get((user_id, msg_id))
+            like = Like.query.get((g.user.id, msg_id))
             db.session.delete(like)
             db.session.commit()
 
         else:
-            like = Like(liked_user_id=user_id, liked_message_id=msg_id)
+            like = Like(liked_user_id=g.user.id, liked_message_id=msg_id)
             db.session.add(like)
             db.session.commit()
 
