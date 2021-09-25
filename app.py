@@ -258,7 +258,7 @@ def delete_user():
     if g.csrf.validate_on_submit():
         do_logout()
 
-        db.session.delete(g.user)
+        g.user.query.delete()
         db.session.commit()
 
         return redirect("/signup")
