@@ -358,7 +358,7 @@ def show_user_liked_messages():
     return render_template("/messages/liked_msg.html", messages=liked_messages)
 
 
-@app.post("/message/<int:msg_id>/liked_messages/unlike")
+@app.post("/message/<int:msg_id>/unlike")
 def handle_user_unlike_messages_from_liked_messages(msg_id):
     """Handles user unliking message from liked messages and updates likes table in database"""
     if not g.user:
@@ -372,7 +372,7 @@ def handle_user_unlike_messages_from_liked_messages(msg_id):
     return redirect("/liked_messages")
 
 
-@app.post("/message/<int:msg_id>/liked_messages/like")
+@app.post("/message/<int:msg_id>/like")
 def handle_user_like_messages_from_liked_messages(msg_id):
     """Handles user liking message from liked messages and updates likes table in database"""
     if not g.user:
