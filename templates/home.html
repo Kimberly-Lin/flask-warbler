@@ -67,7 +67,7 @@
             </button>
           </form>
           {% else %}
-          <form method="POST" action="/message/{{msg.id}}/like"></form>
+          <form method="POST" action="/message/{{msg.id}}/like">
           {{ g.csrf.hidden_tag() }}
           <button type=submit class="like-unlike-button">
             <!-- this is O(M*N), can make it O(M+N)if we import a set and only check if message is in set-->
