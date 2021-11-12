@@ -42,7 +42,7 @@
     </div>
   </aside>
   <div class="col-lg-6 col-md-8 col-sm-12">
-    <h1 class="text-danger"> HERE ARE YOUR LIKED MESSAGES!!!!!</h1>
+    <h1> Liked Messages</h1>
     <ul class="list-group" id="messages">
       {% for msg in messages %}
       <li class="list-group-item row">
@@ -63,7 +63,7 @@
             {{ g.csrf.hidden_tag() }}
             <button type=submit class="like-unlike-button">
               <!-- this is O(M*N), can make it O(M+N)if we import a set and only check if message is in set-->
-              <i class="fas fa-grin-squint-tears"></i>
+              <i class="fas fa-thumbs-up"></i>
             </button>
           </form>
           {% else %}
@@ -71,7 +71,7 @@
             {{ g.csrf.hidden_tag() }}
             <button type=submit class="like-unlike-button">
               <!-- this is O(M*N), can make it O(M+N)if we import a set and only check if message is in set-->
-              <i class="far fa-grin-squint-tears"></i>
+              <i class="far fa-thumbs-up"></i>
             </button>
           </form>
           {% endif %}
