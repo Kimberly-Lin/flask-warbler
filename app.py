@@ -244,7 +244,7 @@ def edit_user_profile():
         else:
             form.password.errors = ["Please enter correct credentials."]
 
-    return render_template("/users/edit.html", form=form,user_id=g.user.id)
+    return render_template("/users/edit.html", form=form, user_id=g.user.id)
 
 
 @ app.post('/users/delete')
