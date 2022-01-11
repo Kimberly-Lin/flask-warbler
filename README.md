@@ -2,7 +2,7 @@
 
 Back-end for [Warbler](https://warbler-klin.herokuapp.com), a twitter-like social network web application.
 
-## Features Complete
+## Completed Features
 - Login/Signup
 - User can: 
     - view profiles
@@ -35,6 +35,6 @@ Back-end for [Warbler](https://warbler-klin.herokuapp.com), a twitter-like socia
     ```console
     (venv) $ flask run
     ```
-## More todos:
+## More to-dos:
 - Sending direct messages
 - Allow admin users
